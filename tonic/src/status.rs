@@ -327,11 +327,27 @@ impl Status {
             Err(err) => err,
         };
 
+        // Return a useful status instead of `unknown` when we have a transport error (this might eventually migrate to `TLSError`)
+        if let Some(terr) = err.downcast_ref::<crate::transport::Error>() {
+            return Ok(Status::from_transport_error(&*terr))
+        }
+
         if let Some(status) = find_status_in_source_chain(&*err) {
             return Ok(status);
         }
 
+
         Err(err)
+    }
+
+    fn from_transport_error(err: &crate::transport::Error) -> Status {
+        if let Some(source) = err.source() {
+            if let Some(hyper_error) = source.downcast_ref::<hyper::Error>() {
+                return Status::new(Code::Unavailable, hyper_error.to_string());
+            }
+        }
+
+        Status::new(Code::Internal, err.to_string())
     }
 
     // FIXME: bubble this into `transport` and expose generic http2 reasons.
