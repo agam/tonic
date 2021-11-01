@@ -330,13 +330,12 @@ impl Status {
         // Return a useful status instead of `unknown` when we have a transport error (this might eventually migrate to `TLSError`)
         #[cfg(feature = "transport")]
         if let Some(terr) = err.downcast_ref::<crate::transport::Error>() {
-            return Ok(Status::from_transport_error(&*terr))
+            return Ok(Status::from_transport_error(&*terr));
         }
 
         if let Some(status) = find_status_in_source_chain(&*err) {
             return Ok(status);
         }
-
 
         Err(err)
     }
